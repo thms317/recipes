@@ -5,6 +5,8 @@
 ## Recipe Information
 
 - **Servings:** 2 personen
+- **Course:** Main
+- **Difficulty:** Easy
 
 ## Ingredients
 

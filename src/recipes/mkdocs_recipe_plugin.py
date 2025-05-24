@@ -1,8 +1,11 @@
 """MkDocs plugin for recipes."""
 
+import json
 import re
+import sqlite3
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any
+from typing import Any, Dict, List, Optional, Tuple, cast
 
 from mkdocs.config import config_options
 from mkdocs.config.base import Config
@@ -37,6 +40,123 @@ class RecipePlugin(BasePlugin[RecipePluginConfig]):
     extracting recipe information and transforming it into an HTML table
     with the recipe image displayed alongside.
     """
+
+    def on_config(self, config: MkDocsConfig) -> MkDocsConfig:
+        """Process the configuration before building.
+
+        Args:
+            config: MkDocs configuration dictionary
+
+        Returns
+        -------
+            The modified configuration
+        """
+        # Generate index files for recipes
+        try:
+            from recipes.auto_index import on_startup
+
+            on_startup()
+        except Exception as e:
+            print(f"Error generating recipe index files: {e}")
+
+        # Ensure the database exists
+        db_path = Path("docs/database/recipes.db")
+        if not db_path.exists():
+            # Create an empty database file
+            db_path.parent.mkdir(exist_ok=True, parents=True)
+
+            try:
+                # Try to populate the database with recipe data
+                from recipes.parse_recipes import populate_database
+
+                populate_database()
+            except Exception as e:
+                print(f"Error populating recipe database: {e}")
+                # Create an empty file if we can't import the database
+                with open(db_path, "wb") as f:
+                    pass
+
+        # Generate the recipes JSON file directly in the docs directory
+        # This ensures it will be copied to the site directory during build
+        json_dir = Path("docs/recipes/api")
+        json_dir.mkdir(exist_ok=True, parents=True)
+        self._generate_recipe_json(db_path, json_dir / "recipes.json")
+
+        return config
+
+    def on_serve(self, server: Any, config: MkDocsConfig, builder: Any) -> Any:
+        """Add recipe API endpoint to the development server.
+
+        Args:
+            server: The WSGI server instance
+            config: The MkDocs configuration dictionary
+            builder: The MkDocs builder
+
+        Returns
+        -------
+            The server instance, potentially modified
+        """
+        return server
+
+    def on_post_build(self, config: MkDocsConfig) -> None:
+        """Run operations after the build is complete.
+
+        Args:
+            config: MkDocs configuration dictionary
+        """
+        # No need to regenerate the JSON file here since we're doing it in on_config
+        # and the file will be copied from docs to site directory during the build
+
+    def _generate_recipe_json(self, db_path: Path, output_path: Path) -> None:
+        """Generate a JSON file with recipe data.
+
+        Args:
+            db_path: Path to the database file
+            output_path: Path where the JSON file should be saved
+        """
+        recipes = []
+
+        if db_path.exists():
+            try:
+                conn = sqlite3.connect(str(db_path))
+                conn.row_factory = sqlite3.Row
+                cursor = conn.cursor()
+
+                # Get table info to check for column existence
+                cursor.execute("PRAGMA table_info(recipes)")
+                columns = [column_info[1] for column_info in cursor.fetchall()]
+
+                # Build query based on available columns
+                select_fields = ["id", "title", "description", "file_path", "language"]
+                if "category" in columns:
+                    select_fields.append("category")
+                if "difficulty" in columns:
+                    select_fields.append("difficulty")
+                if "prep_time" in columns:
+                    select_fields.append("prep_time")
+                if "cook_time" in columns:
+                    select_fields.append("cook_time")
+                if "total_time" in columns:
+                    select_fields.append("total_time")
+                if "servings" in columns:
+                    select_fields.append("servings")
+
+                query = f"SELECT {', '.join(select_fields)} FROM recipes"
+                cursor.execute(query)
+
+                recipes = [dict(row) for row in cursor.fetchall()]
+                conn.close()
+            except Exception as e:
+                print(f"Error generating recipe JSON: {e}")
+
+        # Ensure directory exists
+        output_path.parent.mkdir(exist_ok=True, parents=True)
+
+        # Write JSON to file
+        with open(output_path, "w", encoding="utf-8") as f:
+            json.dump(recipes, f, ensure_ascii=False, indent=2)
+
+        print(f"Generated recipe API file at {output_path} with {len(recipes)} recipes")
 
     def on_page_markdown(
         self,
@@ -197,28 +317,36 @@ class RecipePlugin(BasePlugin[RecipePluginConfig]):
         -------
             str: Relative path to the image file
         """
-        # Extract the base name of the file without extension
-        image_stem = Path(file_path).stem
+        # Get basic file name without extension
+        file_path = Path(file_path)
+        image_stem = file_path.stem
 
-        # Define supported image formats to check
-        supported_extensions = ["jpg", "jpeg", "png", "webp", "gif"]
+        # Determine category from file path
+        category = None
+        for part in file_path.parts:
+            if part in ["breakfast", "main", "side", "dessert", "starter"]:
+                category = part
+                break
 
-        # Build the path to the images directory based on config
-        # Normalize path to handle different config formats (with or without 'docs/' prefix)
-        images_dir = self.config.images_dir
-        if not images_dir.startswith(("docs/", "/")):
-            images_dir = f"docs/{images_dir}"
+        # If we found the category, check for actual image files
+        if category:
+            # Base path for category images
+            category_images_dir = f"docs/recipes/{category}/images"
 
-        # Check for the existence of image files with different extensions
-        for ext in supported_extensions:
-            image_path = Path(images_dir) / f"{image_stem}.{ext}"
-            if image_path.exists():
-                # Return a relative path that works in the rendered HTML
-                # Normalize the path to ensure correct relative path calculation
-                return f"../images/{image_stem}.{ext}"
+            # Check for all possible image extensions, including jpeg
+            for ext in ["webp", "jpg", "jpeg", "png", "gif"]:
+                image_path = Path(f"{category_images_dir}/{image_stem}.{ext}")
+                if image_path.exists():
+                    print(f"Found image: {image_path}")
+                    # Use ../images for all images (relative path from recipe page)
+                    return f"../images/{image_stem}.{ext}"
 
-        # If no matching file is found, default to jpg (for backward compatibility)
-        return f"../images/{image_stem}.jpg"
+        # Use fallback based on what we usually have
+        if category:
+            print(f"No image found, defaulting to ../images/{image_stem}.webp")
+            return f"../images/{image_stem}.webp"
+        print(f"No category found, defaulting to ../images/{image_stem}.webp")
+        return f"../images/{image_stem}.webp"
 
     def _generate_recipe_html_table(
         self,

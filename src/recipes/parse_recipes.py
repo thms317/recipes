@@ -13,6 +13,7 @@ Usage:
 - As a MkDocs extension for formatting
 """
 
+import os
 import re
 import sqlite3
 from pathlib import Path
@@ -194,11 +195,14 @@ class RecipeParser:
         formatted_md.append(f"> *{self.recipe_data['description']}*\n")
 
     def _add_info_and_image_section(self, formatted_md: list[str]) -> None:
-        """Add info table and image container to the formatted markdown.
+        """Add info section and image to the formatted markdown.
 
         Args:
             formatted_md: List to append markdown lines to
         """
+        formatted_md.append("## Recipe Information\n")
+
+        # Convert recipe info to HTML table
         formatted_md.append(
             '<div style="display: flex; flex-direction: row; align-items: center;">',
         )
@@ -206,35 +210,47 @@ class RecipeParser:
         formatted_md.append("        <table>")
         formatted_md.append("            <tr><th>Information</th><th>Details</th></tr>")
 
-        # Map internal field names to display names
-        field_display_names = {
-            "prep_time": "Prep Time",
-            "cook_time": "Cook Time",
-            "cooling_time": "Cooling Time",
-            "total_time": "Total Time",
-            "servings": "Servings",
-        }
-
-        # Add table rows
-        for field, display_name in field_display_names.items():
-            if field in self.recipe_data["info"]:
-                formatted_md.append(
-                    f"            <tr><td>{display_name}</td><td>{self.recipe_data['info'][field]}</td></tr>",
-                )
+        for key, value in self.recipe_data["info"].items():
+            formatted_md.append(f"            <tr><td>{key}</td><td>{value}</td></tr>")
 
         formatted_md.append("        </table>")
         formatted_md.append("    </div>")
 
-        # Extract image name from file path to determine image path
-        image_name = Path(self.file_path).stem
+        # Extract image name from file path (without extension)
+        file_path = Path(self.file_path)
+        image_name = file_path.stem
+
+        # Identify category from file path
+        category = None
+        for part in file_path.parts:
+            if part in ["breakfast", "main", "side", "dessert", "starter"]:
+                category = part
+                break
 
         # Add image container
         formatted_md.append(
             '    <div style="flex: 1; padding-left: 20px; display: flex; justify-content: center;">',
         )
+
+        # Use the appropriate path for images - critical to use ../images/ not images/
+        image_path = None
+        if category:
+            # Check all possible image types
+            category_images_dir = f"docs/recipes/{category}/images"
+            for ext in ["webp", "jpg", "jpeg", "png", "gif"]:
+                check_path = Path(f"{category_images_dir}/{image_name}.{ext}")
+                if check_path.exists():
+                    image_path = f"../images/{image_name}.{ext}"
+                    break
+
+        # Default to webp if no image found
+        if not image_path:
+            image_path = f"../images/{image_name}.webp"
+
         formatted_md.append(
-            f'        <img src="../images/{image_name}.jpg" alt="{self.recipe_data["title"]}" style="max-width: 100%;">',
+            f'        <img src="{image_path}" alt="{self.recipe_data["title"]}" style="max-width: 100%;">',
         )
+
         formatted_md.append("    </div>")
         formatted_md.append("</div>\n")
 
@@ -344,6 +360,8 @@ class RecipeDatabase:
             description TEXT,
             file_path TEXT NOT NULL,
             language TEXT,
+            category TEXT,
+            difficulty TEXT,
             prep_time TEXT,
             cook_time TEXT,
             total_time TEXT,
@@ -447,17 +465,27 @@ class RecipeDatabase:
         # Determine language by checking for Dutch keywords in the title
         language = self._determine_language(recipe_data["title"])
 
+        # Extract category and difficulty if present
+        category = recipe_data["info"].get("course", "")
+        difficulty = recipe_data["info"].get("difficulty", "")
+
         # Insert main recipe info
         self.cursor.execute(
             """
-        INSERT INTO recipes (title, description, file_path, language, prep_time, cook_time, total_time, servings)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO recipes (
+            title, description, file_path, language,
+            category, difficulty, prep_time, cook_time,
+            total_time, servings
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
             (
                 recipe_data["title"],
                 recipe_data["description"],
                 file_path,
                 language,
+                category,
+                difficulty,
                 recipe_data["info"].get("prep_time", ""),
                 recipe_data["info"].get("cook_time", ""),
                 recipe_data["info"].get("total_time", ""),
@@ -473,7 +501,7 @@ class RecipeDatabase:
         return recipe_id
 
     def _determine_language(self, title: str) -> str:
-        """Determine recipe language from title.
+        """Determine the language of a recipe based on its title.
 
         Args:
             title: Recipe title
@@ -482,13 +510,34 @@ class RecipeDatabase:
         -------
             Language code ('nl' for Dutch, 'en' for English)
         """
-        return (
-            "nl"
-            if any(
-                dutch_word in title.lower() for dutch_word in ["nederlandse", "hollandse", "recept"]
-            )
-            else "en"
-        )
+        # Dutch keywords often found in recipe titles
+        dutch_keywords = [
+            "boterkoek",
+            "appeltaart",
+            "stroopwafel",
+            "poffertjes",
+            "speculaas",
+            "stamppot",
+            "hutspot",
+            "erwtensoep",
+            "bitterballen",
+            "oliebollen",
+            "zoete",
+            "koek",
+            "taart",
+            "saus",
+            "soep",
+            "gebak",
+        ]
+
+        # Check if any Dutch keywords are in the title
+        title_lower = title.lower()
+        for keyword in dutch_keywords:
+            if keyword in title_lower:
+                return "nl"
+
+        # Default to English
+        return "en"
 
     def _insert_recipe_ingredients(self, recipe_id: int, recipe_data: dict[str, Any]) -> None:
         """Insert recipe ingredients.
@@ -650,7 +699,12 @@ def process_recipe_files(recipes_dir: Path, db: RecipeDatabase) -> None:
         recipes_dir: Directory containing recipe markdown files
         db: Database instance for storing recipe data
     """
-    recipe_files = list(recipes_dir.glob("*.md"))
+    # Skip index files like main.md, breakfast.md, side.md, etc.
+    index_files = ["main.md", "breakfast.md", "side.md", "dessert.md", "sides.md", "starter.md"]
+
+    recipe_files = [
+        file for file in list(recipes_dir.glob("**/*.md")) if file.name not in index_files
+    ]
     print(f"Found {len(recipe_files)} recipe files")
 
     for file_path in recipe_files:

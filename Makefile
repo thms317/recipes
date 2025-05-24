@@ -1,4 +1,4 @@
-.PHONY: install setup clean test tree docs recipe_db test-recipe-plugin install-recipe-plugin serve-docs dev-recipe-plugin
+.PHONY: install setup clean test tree docs recipe_db test-recipe-plugin install-recipe-plugin serve-docs dev-recipe-plugin lint
 
 .DEFAULT_GOAL := setup
 
@@ -7,42 +7,17 @@ SHELL := /bin/bash
 PROFILE_NAME := "DEFAULT"
 
 install:
-	@CURRENT_OS=$$(uname -s); \
-	echo "Current OS: $$CURRENT_OS"; \
-	if [ "$$CURRENT_OS" = "Darwin" ]; then \
-		echo "Verifying if Homebrew is installed..."; \
-		which brew > /dev/null || (echo "Homebrew is not installed. Installing Homebrew..." && /bin/bash -c "$$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"); \
-		echo "Installing tools..."; \
-		for tool in git uv; do \
-			if ! command -v $$tool >/dev/null 2>&1; then \
-				echo "Installing $$tool..."; \
-				brew install $$tool; \
-			else \
-				echo "$$tool is already installed. Skipping."; \
-			fi; \
-		done; \
-	elif [ "$$CURRENT_OS" = "Linux" ]; then \
-		echo "Installing tools..."; \
-		if ! command -v git >/dev/null 2>&1; then \
-				echo "Installing git..."; \
-				sudo apt update && sudo apt install -y git; \
-			else \
-				echo "git is already installed. Skipping."; \
-			fi; \
-		if ! command -v uv >/dev/null 2>&1; then \
-			echo "Installing uv..."; \
-			curl -LsSf https://astral.sh/uv/install.sh | sh; \
-			echo "Sourcing ~/.bashrc to update shell environment..."; \
-			source ~/.bashrc || true; \
-			echo "Continuing even if sourcing ~/.bashrc failed..."; \
+	@echo "Verifying if Homebrew is installed..."; \
+	which brew > /dev/null || (echo "Homebrew is not installed. Installing Homebrew..." && /bin/bash -c "$$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"); \
+	echo "Installing tools..."; \
+	for tool in git uv; do \
+		if ! command -v $$tool >/dev/null 2>&1; then \
+			echo "Installing $$tool..."; \
+			brew install $$tool; \
 		else \
-			echo "uv is already installed. Skipping."; \
+			echo "$$tool is already installed. Skipping."; \
 		fi; \
-	else \
-		echo "Unsupported OS. Currently supported kernels are either Darwin (macOS) or Linux (ubuntu22.04)."; \
-		exit 1; \
-	fi; \
-
+	done; \
 	echo "Setting up Python..."; \
 	uv python install || true; \
 	echo "All tools installed successfully."
@@ -58,8 +33,8 @@ setup:
 		fi; \
 	}
 	@echo "All tools installed successfully."
-	@echo "Setting up the project..."
 
+	@echo "Setting up the project..."
 	@uv sync;
 
 	@if [ ! -d ".git" ]; then \
@@ -76,7 +51,6 @@ setup:
 clean:
 	@echo "Uninstalling local packages..."
 	@rm -rf uv.lock
-	@
 	@uv sync
 
 	@echo -e "Cleaning up project artifacts..."
@@ -112,14 +86,13 @@ recipe_db:
 		uv run python -c "import sqlite3; conn = sqlite3.connect('docs/database/recipes.db'); conn.close()"; \
 	fi
 	@echo "Parsing recipe markdown files and populating database..."
-	@uv run python -c "from src.recipes import populate_database; populate_database()"
+	@PYTHONPATH=$(CURDIR) uv run python -c "from src.recipes import populate_database; populate_database()"
 
 docs: recipe_db
 	@echo "Serving recipes..."
 	@. .venv/bin/activate
-	@uv run mkdocs serve
+	@PYTHONPATH=$(CURDIR) uv run mkdocs serve
 
-# MkDocs Recipe Plugin
 test-recipe-plugin:
 	@echo "Running recipe plugin tests..."
 	@. .venv/bin/activate
@@ -133,6 +106,20 @@ install-recipe-plugin:
 serve-docs: install-recipe-plugin
 	@echo "Serving documentation with MkDocs..."
 	@. .venv/bin/activate
-	@uv run mkdocs serve
+	@PYTHONPATH=$(CURDIR) uv run mkdocs serve
 
 dev-recipe-plugin: clean install-recipe-plugin test-recipe-plugin serve-docs
+
+lint:
+	@echo "Linting the project..."
+	@uv sync
+	@uv build
+	@echo "Running ruff..."
+	@uv run ruff check --output-format=concise .
+	@echo "Running mypy..."
+	@uv run mypy .
+	@echo "Running pydoclint..."
+	@uv run pydoclint .
+	@echo "Running bandit..."
+	@uv run bandit --configfile=pyproject.toml --severity-level=medium -r .
+	@echo "Linting completed successfully!"

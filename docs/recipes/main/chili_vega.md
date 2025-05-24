@@ -3,10 +3,14 @@
 > *Bennita's classic.*
 
 ## Recipe Information
+
 - **Cook Time:** 30 minutes
 - **Servings:** 4 personen
+- **Course:** Main
+- **Difficulty:** Easy
 
 ## Ingredients
+
 - 1 of 2 ui, gesnipperd
 - 2 teentjes knoflook, fijngehakt
 - Grote pot Kapucijners (Hak is echt de lekkerste)
@@ -23,6 +27,7 @@
 - Zout en peper
 
 ## Instructions
+
 1. Alle potten of blikjes eerst goed uitlekken en afspoelen.
 2. Fruit de ui en knoflook.
 3. Voeg de paprika toe en bak even mee.
@@ -36,6 +41,7 @@
 11. Eventueel extra tomatensap toevoegen en verder laten pruttelen.
 
 ## Recipe Notes
+
 - Alle potten of blikjes eerst goed uitlekken en afspoelen
 - Vega gehakt niet te vroeg toevoegen
 - Hak Kapucijners zijn aangeraden als de lekkerste optie

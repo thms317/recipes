@@ -1,11 +1,15 @@
 # Port-Caramelized Onions
 
->  *These luxurious caramelized onions are cooked low and slow, then finished with aged port wine for a deep, complex flavor. Perfect for topping burgers, steaks, crostini, or stirring into pasta.*
+> *These luxurious caramelized onions are cooked low and slow, then finished with aged port wine for a deep, complex flavor. Perfect for topping burgers, steaks, crostini, or stirring into pasta.*
 
 ## Recipe Information
+
 - **Cook Time:** 45-55 minutes
+- **Course:** Side
+- **Difficulty:** Medium
 
 ## Ingredients
+
 - 900g (2 lbs, about 4 large) yellow or sweet onions
 - 3 tablespoons unsalted butter
 - 1 tablespoon olive oil
@@ -17,6 +21,7 @@
 - 1 teaspoon balsamic vinegar (optional, for added depth)
 
 ## Instructions
+
 1. Prepare the onions: Peel and halve the onions from root to stem. Slice them thinly into half-moons (about 1/8 to 1/4 inch thick).
 2. Heat the pan: In a large, heavy-bottomed skillet or Dutch oven, heat the butter and olive oil over medium heat until the butter is melted and bubbling subsides.
 3. Add the onions: Add all the sliced onions to the pan. They will fill it up quite high but will cook down substantially. Sprinkle with salt and pepper.
@@ -27,6 +32,7 @@
 8. Finish with herbs: Stir in the fresh thyme leaves if using.
 
 ## Recipe Notes
+
 - Store refrigerated in an airtight container for up to 1 week
 - Freeze in small portions for up to 3 months
 - Allow to come to room temperature before serving as a cold condiment, or rewarm gently to serve hot

@@ -1,18 +1,14 @@
 site_name: recipes
-site_url: https://thms317.github.io/recipes/
+site_url: https://thms317.github.io/
 
 nav:
   - Introduction: index.md
   - Recipes:
-      - Banana-Peanut Butter Granola: recipes/granola.md
-      - Vegetarische Chili: recipes/chili_vega.md
-      - Port-Caramelized Onions: recipes/port_caramelized_onions.md
-      - Boterkoek: recipes/boterkoek.md
-      - Appeltaart: recipes/appeltaart.md
-      - Zoete Aardappelsoep: recipes/zoete_aardappelsoep.md
-      - Spaghetti Carbonara: recipes/carbonara.md
-      - Gnocchi met Saliepesto en Artisjokharten: recipes/gnocchi_saliepesto.md
-      - Zesty Sumac Vinaigrette: recipes/sumac.md
+    - Breakfast: recipes/breakfast.md
+    - Starter: recipes/starter.md
+    - Main: recipes/main.md
+    - Side: recipes/side.md
+    - Dessert: recipes/dessert.md
   - Recipe Database: recipe_database.md
   - LLM Instructions: llm_instructions.md
 
@@ -27,7 +23,7 @@ plugins:
   - search
   - recipes:
       recipes_dir: recipes
-      images_dir: recipes/images
+      images_dir: images
 
 markdown_extensions:
   - pymdownx.highlight

@@ -9,6 +9,8 @@
 - **Cooling Time:** 45-60 minutes
 - **Total Time:** 1 hour 30 minutes
 - **Servings:** About 4 cups
+- **Category:** Breakfast
+- **Difficulty:** Easy
 
 ## Ingredients
 

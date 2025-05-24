@@ -1,17 +1,17 @@
 repos:
 -   repo: https://gitlab.com/vojko.pribudic.foss/pre-commit-update
-    rev: v0.6.1
+    rev: v0.7.0
     hooks:
     -   id: pre-commit-update
         args:
         -   --verbose
 -   repo: https://github.com/compilerla/conventional-pre-commit
-    rev: v4.0.0
+    rev: v4.2.0
     hooks:
     -   id: conventional-pre-commit
         stages: [commit-msg]
 -   repo: https://github.com/astral-sh/uv-pre-commit
-    rev: 0.6.14
+    rev: 0.7.8
     hooks:
     -   id: uv-lock
 -   repo: https://github.com/pre-commit/pre-commit-hooks
@@ -50,6 +50,7 @@ repos:
 #     -   id: bandit
 #         args:
 #         -   --configfile=pyproject.toml
+#         -   --severity-level=medium
 #         additional_dependencies:
 #         -   bandit[toml]
 # -   repo: https://github.com/jsh9/pydoclint
@@ -57,14 +58,6 @@ repos:
 #     hooks:
 #     -   id: pydoclint
 -   repo: https://github.com/gitleaks/gitleaks
-    rev: v8.24.3
+    rev: v8.26.0
     hooks:
     -   id: gitleaks
-
--   repo: local
-    hooks:
-    -   id: pytest-unit-tests
-        name: pytest-unit-tests
-        entry: uv run pytest -v tests --cov=src
-        language: system
-        pass_filenames: false

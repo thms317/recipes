@@ -28,3 +28,64 @@ table td {
         margin-top: 20px;
     }
 }
+
+/* Interactive Recipe Table */
+.recipe-table-container {
+    margin: 20px 0;
+    overflow-x: auto;
+}
+
+.recipe-filter {
+    width: 100%;
+    padding: 12px;
+    margin-bottom: 15px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 16px;
+}
+
+.recipe-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+
+.recipe-table th {
+    background-color: var(--md-primary-fg-color, #2196f3);
+    color: white;
+    padding: 12px;
+    text-align: left;
+    border: none;
+    cursor: pointer;
+    position: relative;
+}
+
+.recipe-table th:hover {
+    background-color: var(--md-primary-fg-color--dark, #1976d2);
+}
+
+.recipe-table td {
+    padding: 10px 12px;
+    border-bottom: 1px solid #eee;
+}
+
+.recipe-table tr:hover {
+    background-color: rgba(0, 0, 0, 0.03);
+}
+
+.recipe-table a {
+    color: var(--md-typeset-a-color);
+    text-decoration: none;
+}
+
+.recipe-table a:hover {
+    text-decoration: underline;
+}
+
+/* Empty state message */
+.recipe-table-empty {
+    padding: 30px;
+    text-align: center;
+    color: #666;
+    font-style: italic;
+}

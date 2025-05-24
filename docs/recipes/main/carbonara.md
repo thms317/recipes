@@ -8,6 +8,8 @@
 - **Cook Time:** 15 minutes
 - **Total Time:** 30-35 minutes
 - **Servings:** 4 servings
+- **Course:** Main
+- **Difficulty:** Easy
 
 ## Ingredients
 
